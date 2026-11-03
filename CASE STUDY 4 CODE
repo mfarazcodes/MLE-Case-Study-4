@@ -1,0 +1,26 @@
+import pandas as pd
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense
+from transformers import TFAutoModelForSequenceClassification, AutoTokenizer
+
+df = pd.DataFrame({
+    'text': ["I love this", "Terrible product", "Works great", "Waste of money"],
+    'label': [1, 0, 1, 0]
+})
+
+tk = Tokenizer()
+tk.fit_on_texts(df['text'])
+X_lstm = pad_sequences(tk.texts_to_sequences(df['text']))
+
+lstm = Sequential([Embedding(10, 8), LSTM(8), Dense(1, activation='sigmoid')])
+lstm.compile(optimizer='adam', loss='binary_crossentropy')
+lstm.fit(X_lstm, df['label'], epochs=1)
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+X_bert = dict(tokenizer(df['text'].tolist(), padding=True, return_tensors="tf"))
+
+bert = TFAutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+bert.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+bert.fit(X_bert, df['label'], epochs=1)
